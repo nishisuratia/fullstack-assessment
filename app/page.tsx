@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,18 +41,29 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(ALL);
   const [selectedSubCategory, setSelectedSubCategory] = useState(ALL);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 300);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories));
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -68,12 +79,12 @@ export default function Home() {
 
   useEffect(() => {
     setPage(0);
-  }, [search, selectedCategory, selectedSubCategory]);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory]);
 
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (search) params.append("search", search);
+    if (debouncedSearch) params.append("search", debouncedSearch);
     if (selectedCategory !== ALL) params.append("category", selectedCategory);
     if (selectedSubCategory !== ALL)
       params.append("subCategory", selectedSubCategory);
@@ -87,7 +98,7 @@ export default function Home() {
         setTotal(data.total);
         setLoading(false);
       });
-  }, [search, selectedCategory, selectedSubCategory, page]);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, page]);
 
   if (!mounted) {
     return (
@@ -117,8 +128,8 @@ export default function Home() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -157,11 +168,12 @@ export default function Home() {
               </Select>
             )}
 
-            {(search || selectedCategory !== ALL || selectedSubCategory !== ALL) && (
+            {(searchInput || selectedCategory !== ALL || selectedSubCategory !== ALL) && (
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearch("");
+                  setSearchInput("");
+                  setDebouncedSearch("");
                   setSelectedCategory(ALL);
                   setSelectedSubCategory(ALL);
                 }}
