@@ -140,7 +140,12 @@ export default function ProductPage() {
                 <Badge variant="outline">{product.subCategoryName}</Badge>
               </div>
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-              <p className="text-sm text-muted-foreground">SKU: {product.retailerSku}</p>
+              {product.retailPrice > 0 && (
+                <p className="text-2xl font-bold text-primary mt-2">
+                  ${product.retailPrice.toFixed(2)}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mt-1">SKU: {product.retailerSku}</p>
             </div>
 
             {product.featureBullets.length > 0 && (
