@@ -23,6 +23,8 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+const ALL = "__all__";
+
 interface Product {
   stacklineSku: string;
   title: string;
@@ -32,32 +34,30 @@ interface Product {
 }
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [subCategories, setSubCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined
-  );
-  const [selectedSubCategory, setSelectedSubCategory] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedCategory, setSelectedCategory] = useState(ALL);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(ALL);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.categories));
   }, []);
 
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory !== ALL) {
       fetch(`/api/subcategories`)
         .then((res) => res.json())
         .then((data) => setSubCategories(data.subCategories));
     } else {
       setSubCategories([]);
-      setSelectedSubCategory(undefined);
+      setSelectedSubCategory(ALL);
     }
   }, [selectedCategory]);
 
@@ -65,8 +65,9 @@ export default function Home() {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append("search", search);
-    if (selectedCategory) params.append("category", selectedCategory);
-    if (selectedSubCategory) params.append("subCategory", selectedSubCategory);
+    if (selectedCategory !== ALL) params.append("category", selectedCategory);
+    if (selectedSubCategory !== ALL)
+      params.append("subCategory", selectedSubCategory);
     params.append("limit", "20");
 
     fetch(`/api/products?${params}`)
@@ -76,6 +77,23 @@ export default function Home() {
         setLoading(false);
       });
   }, [search, selectedCategory, selectedSubCategory]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-6">
+            <h1 className="text-4xl font-bold mb-6">StackShop</h1>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,7 +114,7 @@ export default function Home() {
 
             <Select
               value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value || undefined)}
+              onValueChange={setSelectedCategory}
             >
               <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="All Categories" />
@@ -110,12 +128,10 @@ export default function Home() {
               </SelectContent>
             </Select>
 
-            {selectedCategory && subCategories.length > 0 && (
+            {selectedCategory !== ALL && subCategories.length > 0 && (
               <Select
                 value={selectedSubCategory}
-                onValueChange={(value) =>
-                  setSelectedSubCategory(value || undefined)
-                }
+                onValueChange={setSelectedSubCategory}
               >
                 <SelectTrigger className="w-full md:w-[200px]">
                   <SelectValue placeholder="All Subcategories" />
@@ -130,13 +146,13 @@ export default function Home() {
               </Select>
             )}
 
-            {(search || selectedCategory || selectedSubCategory) && (
+            {(search || selectedCategory !== ALL || selectedSubCategory !== ALL) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearch("");
-                  setSelectedCategory(undefined);
-                  setSelectedSubCategory(undefined);
+                  setSelectedCategory(ALL);
+                  setSelectedSubCategory(ALL);
                 }}
               >
                 Clear Filters
