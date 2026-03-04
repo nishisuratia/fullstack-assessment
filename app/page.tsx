@@ -31,6 +31,7 @@ interface Product {
   categoryName: string;
   subCategoryName: string;
   imageUrls: string[];
+  retailPrice: number;
 }
 
 export default function Home() {
@@ -200,6 +201,11 @@ export default function Home() {
                       <CardTitle className="text-base line-clamp-2 mb-2">
                         {product.title}
                       </CardTitle>
+                      {product.retailPrice > 0 && (
+                        <p className="text-lg font-semibold mb-2">
+                          ${product.retailPrice.toFixed(2)}
+                        </p>
+                      )}
                       <CardDescription className="flex gap-2 flex-wrap">
                         <Badge variant="secondary">
                           {product.categoryName}
