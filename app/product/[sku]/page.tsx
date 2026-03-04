@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -147,6 +147,11 @@ export default function ProductPage() {
               )}
               <p className="text-sm text-muted-foreground mt-1">SKU: {product.retailerSku}</p>
             </div>
+
+            <Button size="lg" className="w-full">
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Add to Cart
+            </Button>
 
             {product.featureBullets.length > 0 && (
               <Card>
