@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,26 +17,53 @@ interface Product {
   imageUrls: string[];
   featureBullets: string[];
   retailerSku: string;
+  retailPrice: number;
 }
 
 export default function ProductPage() {
-  const searchParams = useSearchParams();
-  const productParam = searchParams.get('product');
+  const params = useParams<{ sku: string }>();
   const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    if (productParam) {
-      try {
-        const parsedProduct = JSON.parse(productParam);
-        setProduct(parsedProduct);
-      } catch (error) {
-        console.error('Failed to parse product data:', error);
-      }
-    }
-  }, [productParam]);
+    if (!params.sku) return;
 
-  if (!product) {
+    fetch(`/api/products/${params.sku}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Product not found');
+        return res.json();
+      })
+      .then((data) => {
+        setProduct(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
+  }, [params.sku]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <Link href="/">
+            <Button variant="ghost" className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading product...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
