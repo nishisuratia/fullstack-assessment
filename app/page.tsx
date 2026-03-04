@@ -19,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+
+const PAGE_SIZE = 20;
 
 const ALL = "__all__";
 
@@ -43,6 +45,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState(ALL);
   const [selectedSubCategory, setSelectedSubCategory] = useState(ALL);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -63,21 +67,27 @@ export default function Home() {
   }, [selectedCategory]);
 
   useEffect(() => {
+    setPage(0);
+  }, [search, selectedCategory, selectedSubCategory]);
+
+  useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append("search", search);
     if (selectedCategory !== ALL) params.append("category", selectedCategory);
     if (selectedSubCategory !== ALL)
       params.append("subCategory", selectedSubCategory);
-    params.append("limit", "20");
+    params.append("limit", String(PAGE_SIZE));
+    params.append("offset", String(page * PAGE_SIZE));
 
     fetch(`/api/products?${params}`)
       .then((res) => res.json())
       .then((data) => {
         setProducts(data.products);
+        setTotal(data.total);
         setLoading(false);
       });
-  }, [search, selectedCategory, selectedSubCategory]);
+  }, [search, selectedCategory, selectedSubCategory, page]);
 
   if (!mounted) {
     return (
@@ -175,7 +185,7 @@ export default function Home() {
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-4">
-              Showing {products.length} products
+              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total} products
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
@@ -224,6 +234,32 @@ export default function Home() {
                 </Link>
               ))}
             </div>
+
+            {total > PAGE_SIZE && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {page + 1} of {Math.ceil(total / PAGE_SIZE)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={(page + 1) * PAGE_SIZE >= total}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
