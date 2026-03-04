@@ -46,6 +46,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState(ALL);
   const [selectedSubCategory, setSelectedSubCategory] = useState(ALL);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,7 +61,8 @@ export default function Home() {
     setMounted(true);
     fetch("/api/categories")
       .then((res) => res.json())
-      .then((data) => setCategories(data.categories));
+      .then((data) => setCategories(data.categories))
+      .catch(() => setError("Failed to load categories"));
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
@@ -70,7 +72,8 @@ export default function Home() {
     if (selectedCategory !== ALL) {
       fetch(`/api/subcategories?category=${encodeURIComponent(selectedCategory)}`)
         .then((res) => res.json())
-        .then((data) => setSubCategories(data.subCategories));
+        .then((data) => setSubCategories(data.subCategories))
+        .catch(() => setSubCategories([]));
     } else {
       setSubCategories([]);
       setSelectedSubCategory(ALL);
@@ -83,6 +86,7 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const params = new URLSearchParams();
     if (debouncedSearch) params.append("search", debouncedSearch);
     if (selectedCategory !== ALL) params.append("category", selectedCategory);
@@ -92,10 +96,17 @@ export default function Home() {
     params.append("offset", String(page * PAGE_SIZE));
 
     fetch(`/api/products?${params}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load products");
+        return res.json();
+      })
       .then((data) => {
         setProducts(data.products);
         setTotal(data.total);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
         setLoading(false);
       });
   }, [debouncedSearch, selectedCategory, selectedSubCategory, page]);
@@ -188,7 +199,14 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {loading ? (
+        {error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">{error}</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading products...</p>
           </div>
