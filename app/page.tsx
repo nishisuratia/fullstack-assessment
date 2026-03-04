@@ -142,6 +142,7 @@ export default function Home() {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={ALL}>All Categories</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
@@ -159,6 +160,7 @@ export default function Home() {
                   <SelectValue placeholder="All Subcategories" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={ALL}>All Subcategories</SelectItem>
                   {subCategories.map((subCat) => (
                     <SelectItem key={subCat} value={subCat}>
                       {subCat}
