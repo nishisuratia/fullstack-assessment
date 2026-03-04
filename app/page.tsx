@@ -220,7 +220,7 @@ export default function Home() {
               Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total} products
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {products.map((product, index) => (
                 <Link
                   key={product.stacklineSku}
                   href={`/product/${product.stacklineSku}`}
@@ -235,6 +235,7 @@ export default function Home() {
                             fill
                             className="object-contain p-4"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            priority={index < 4}
                           />
                         )}
                       </div>
