@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useCart } from '@/lib/cart';
 
 interface Product {
   stacklineSku: string;
@@ -26,6 +27,15 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const {
+    items: cartItems,
+    selectedItems,
+    addItem,
+    totalPrice,
+    setItemSelected,
+    setAllSelected,
+  } = useCart();
 
   useEffect(() => {
     if (!params.sku) return;
@@ -148,10 +158,138 @@ export default function ProductPage() {
               <p className="text-sm text-muted-foreground mt-1">SKU: {product.retailerSku}</p>
             </div>
 
-            <Button size="lg" className="w-full">
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                if (!product) return;
+                addItem(
+                  {
+                    stacklineSku: product.stacklineSku,
+                    title: product.title,
+                    categoryName: product.categoryName,
+                    subCategoryName: product.subCategoryName,
+                    imageUrl: product.imageUrls[0],
+                    retailPrice: product.retailPrice,
+                  },
+                  1
+                );
+                setIsCheckoutOpen(true);
+              }}
+            >
               <ShoppingCart className="mr-2 h-5 w-5" />
               Add to Cart
             </Button>
+
+            {isCheckoutOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40">
+                <div className="h-full w-full max-w-md bg-background shadow-lg flex flex-col">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <h2 className="text-lg font-semibold">Your cart</h2>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsCheckoutOpen(false)}
+                    >
+                      <span className="sr-only">Close</span>
+                      ✕
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b text-xs text-muted-foreground">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="h-3 w-3"
+                        checked={
+                          cartItems.length > 0 &&
+                          cartItems.every((item) => item.selected)
+                        }
+                        onChange={(e) => setAllSelected(e.target.checked)}
+                      />
+                      <span>Select items to checkout</span>
+                    </label>
+                    <span>{cartItems.length} in cart · {selectedItems.length} selected</span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                    {cartItems.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Your cart is empty. Add a product to get started.
+                      </p>
+                    ) : (
+                      cartItems.map((item) => (
+                        <div key={item.stacklineSku} className="flex gap-3">
+                          <div className="pt-2">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={item.selected}
+                              onChange={(e) =>
+                                setItemSelected(item.stacklineSku, e.target.checked)
+                              }
+                            />
+                          </div>
+                          <div className="relative h-20 w-20 rounded-md border bg-muted flex-shrink-0 overflow-hidden">
+                            {item.imageUrl && (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.title}
+                                fill
+                                className="object-contain p-1"
+                                sizes="80px"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium line-clamp-2">{item.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {item.categoryName} · {item.subCategoryName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Qty: {item.quantity}
+                            </p>
+                            {item.retailPrice > 0 && (
+                              <p className="mt-2 text-sm font-semibold text-primary">
+                                ${(item.retailPrice * item.quantity).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t px-4 py-4 space-y-2">
+                    {totalPrice > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Estimated total</span>
+                        <span className="font-semibold">
+                          ${totalPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <Link href="/checkout">
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        disabled={cartItems.length === 0 || selectedItems.length === 0}
+                      >
+                        Proceed to Checkout
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      size="sm"
+                      onClick={() => setIsCheckoutOpen(false)}
+                    >
+                      Continue shopping
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {product.featureBullets.length > 0 && (
               <Card>
